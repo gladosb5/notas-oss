@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "notas-selfhosted",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+  // Deploy to your own workers.dev address; add a custom domain if desired.
+  "workers_dev": true,
+  // The app: everything sync.mjs copies into public/ (with its _headers).
+  // worker.js runs only for the paths listed in run_worker_first: the
+  // room's websocket and its two POSTs, and the nota forward. Every other
+  // request (the model files included) is answered by
+  // the assets alone, including the 404 page sync.mjs writes, so a stray
+  // URL (a bot's scan, a mistyped link) never counts as a Worker request.
+  "assets": {
+    "directory": "./public/",
+    "binding": "ASSETS",
+    // sw.js, the manifest and the model contract all name /notas.html, so it
+    // must be served at that exact path rather than redirected to /notas
+    "html_handling": "none",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/collab/*", "/nota/chat"]
+  },
+  // One NoteRoom per shared note: it relays Yjs updates between the people
+  // on that note over hibernating websockets and keeps the merged document
+  // in its SQLite storage, so it costs nothing while nobody is connected.
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "NoteRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["NoteRoom"] }],
+  // nota's questions on the site's own key, per address a minute; generous
+  // because a classroom of tablets shares one address
+  // and the rooms' connections and POSTs, per address a minute: a page
+  // reconnecting or a classroom joining stays far below it
+  "ratelimits": [
+    { "name": "NOTA_LIMIT", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
+    { "name": "COLLAB_LIMIT", "namespace_id": "1002", "simple": { "limit": 240, "period": 60 } }
+  ],
+  // Public site-key budget, shared across every caller; zero disables it.
+  "vars": { "NOTA_DAILY_REQUESTS": "1000", "NOTA_DAILY_TOKENS": "2000000" },
+  "observability": { "enabled": true }
+}

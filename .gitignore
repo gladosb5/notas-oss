@@ -1,0 +1,22 @@
+node_modules/
+test-results/
+playwright-report/
+.tmp-*
+__pycache__/
+*.pyc
+*.log
+.impeccable/
+.wrangler/
+.dev.vars
+.env
+.env.*
+!.env.example
+# Development datasets and model checkpoints belong in the workshop.
+dataset/
+.dataset/
+experiments/
+training/
+checkpoints/
+outputs/
+*.pt
+*.safetensors
